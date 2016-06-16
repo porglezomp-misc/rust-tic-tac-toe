@@ -134,19 +134,8 @@ impl Display for Board {
     }
 }
 
-fn main() {
-    match menu() {
-        Ok((x, o, cat)) => println!("Final scores: X: {} O: {} Cat: {}", x, o, cat),
-        Err(e) => println!("The game failed with a fatal error: {:?}", e),
-    }
-}
-
-fn menu() -> io::Result<(u32, u32, u32)> {
-    game()
-}
-
 fn prompt_confirm(msg: &str) -> bool {
-    let mut buffer = String::with_capacity(16);
+    let mut buffer = String::with_capacity(32);
     loop {
         println!("{}", msg);
         let input = {
@@ -167,7 +156,42 @@ fn prompt_confirm(msg: &str) -> bool {
     }
 }
 
-fn game() -> io::Result<(u32, u32, u32)> {
+fn main() {
+    match menu() {
+        Ok((x, o, cat)) => {
+            println!("Final scores:
+  X: {}
+  O: {}
+Cat: {}",
+                     x,
+                     o,
+                     cat)
+        }
+        Err(e) => println!("The game failed with a fatal error: {:?}", e),
+    }
+}
+
+fn menu() -> io::Result<(u32, u32, u32)> {
+    let mut buffer = String::with_capacity(32);
+    loop {
+        println!("Choose a mode:
+1) local
+2) online");
+
+        let input = {
+            try!(io::stdin().read_line(&mut buffer));
+            buffer.trim().to_lowercase()
+        };
+
+        match &input[..] {
+            "1" | "l" | "local" => return local_game(),
+            "2" | "o" | "online" => return online_game(),
+            _ => (),
+        }
+    }
+}
+
+fn local_game() -> io::Result<(u32, u32, u32)> {
     let stdin = io::stdin();
     let mut buffer = String::with_capacity(32);
     let (mut x, mut o, mut cat) = (0, 0, 0);
@@ -241,4 +265,8 @@ fn game() -> io::Result<(u32, u32, u32)> {
     }
     println!("Goodbye!");
     Ok((x, o, cat))
+}
+
+fn online_game() -> io::Result<(u32, u32, u32)> {
+    Ok((0, 0, 0))
 }
