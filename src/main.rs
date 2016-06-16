@@ -65,10 +65,12 @@ impl Board {
             self[(1, col)] == self[(2, col)]
         }) {
             self[(0, col)]
-        } else if self[(0, 0)].is_some() && self[(0, 0)] == self[(1, 1)] &&
+        } else if self[(0, 0)].is_some() &&
+                  self[(0, 0)] == self[(1, 1)] &&
                   self[(1, 1)] == self[(2, 2)] {
             self[(0, 0)]
-        } else if self[(0, 2)].is_some() && self[(0, 2)] == self[(1, 1)] &&
+        } else if self[(0, 2)].is_some() &&
+                  self[(0, 2)] == self[(1, 1)] &&
                   self[(1, 1)] == self[(2, 0)] {
             self[(0, 2)]
         } else {
@@ -106,6 +108,7 @@ impl Display for Board {
                 try!(match self.squares[$n] {
                     Some(X) => write!(f, " X "),
                     Some(O) => write!(f, " O "),
+                    // This changes 012 345 678 into 789 456 123 for the numpad buttons
                     None => write!(f, " {} ", 9 - ($n/3) * 3 - (2 - $n%3)),
                 })
             }
@@ -132,10 +135,14 @@ impl Display for Board {
 }
 
 fn main() {
-    match game() {
-        Ok(()) => (),
+    match menu() {
+        Ok((x, o, cat)) => println!("Final scores: X: {} O: {} Cat: {}", x, o, cat),
         Err(e) => println!("The game failed with a fatal error: {:?}", e),
     }
+}
+
+fn menu() -> io::Result<(u32, u32, u32)> {
+    game()
 }
 
 fn prompt_confirm(msg: &str) -> bool {
@@ -160,9 +167,10 @@ fn prompt_confirm(msg: &str) -> bool {
     }
 }
 
-fn game() -> io::Result<()> {
+fn game() -> io::Result<(u32, u32, u32)> {
     let stdin = io::stdin();
     let mut buffer = String::with_capacity(32);
+    let (mut x, mut o, mut cat) = (0, 0, 0);
     'game: loop {
         let mut board = Board::new();
         let mut turn = X;
@@ -205,15 +213,20 @@ fn game() -> io::Result<()> {
 
             if board.game_over() {
                 match board.winner() {
-                    Some(side) => {
-                        println!("{}s win!", side);
-                        break;
+                    Some(X) => {
+                        println!("Xs win!");
+                        x += 1;
+                    }
+                    Some(O) => {
+                        println!("Os win!");
+                        o += 1;
                     }
                     None => {
                         println!("It's the cat's game!");
-                        break;
+                        cat += 1;
                     }
                 }
+                break;
             }
 
             turn = match turn {
@@ -223,9 +236,9 @@ fn game() -> io::Result<()> {
         }
 
         if !prompt_confirm("Play again? [Y/n]") {
-           break 'game;
+            break 'game;
         }
     }
     println!("Goodbye!");
-    Ok(())
+    Ok((x, o, cat))
 }
