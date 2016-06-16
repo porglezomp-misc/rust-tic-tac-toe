@@ -2,6 +2,7 @@
 
 use std::ops::{Index, IndexMut};
 use std::fmt::{Display, Formatter, Error};
+use std::ascii::AsciiExt;
 use std::io;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -27,9 +28,7 @@ struct Board {
 
 impl Board {
     fn new() -> Board {
-        Board {
-            squares: [None; 9],
-        }
+        Board { squares: [None; 9] }
     }
 
     fn numpad_to_position(key: usize) -> Option<(usize, usize)> {
@@ -44,6 +43,36 @@ impl Board {
             2 => Some((2, 1)),
             3 => Some((2, 2)),
             _ => None,
+        }
+    }
+
+    fn is_full(&self) -> bool {
+        self.squares.iter().all(Option::is_some)
+    }
+
+    fn game_over(&self) -> bool {
+        self.winner().is_some() || self.is_full()
+    }
+
+    fn winner(&self) -> Option<Piece> {
+        if let Some(row) = (0..3).find(|&row| {
+            self[(row, 0)].is_some() && self[(row, 0)] == self[(row, 1)] &&
+            self[(row, 1)] == self[(row, 2)]
+        }) {
+            self[(row, 0)]
+        } else if let Some(col) = (0..3).find(|&col| {
+            self[(0, col)].is_some() && self[(0, col)] == self[(1, col)] &&
+            self[(1, col)] == self[(2, col)]
+        }) {
+            self[(0, col)]
+        } else if self[(0, 0)].is_some() && self[(0, 0)] == self[(1, 1)] &&
+                  self[(1, 1)] == self[(2, 2)] {
+            self[(0, 0)]
+        } else if self[(0, 2)].is_some() && self[(0, 2)] == self[(1, 1)] &&
+                  self[(1, 1)] == self[(2, 0)] {
+            self[(0, 2)]
+        } else {
+            None
         }
     }
 }
@@ -109,40 +138,93 @@ fn main() {
     }
 }
 
-fn game() -> io::Result<()> {
-    let mut board = Board::new();
-    let mut turn = X;
-    let stdin = io::stdin();
-    let mut buffer = String::with_capacity(32);
+fn prompt_confirm(msg: &str) -> bool {
+    let mut buffer = String::with_capacity(16);
     loop {
-        println!("{}'s turn (q to quit):\n{}", turn, board);
+        println!("{}", msg);
         let input = {
-            buffer.clear();
-            try!(stdin.read_line(&mut buffer));
+            match io::stdin().read_line(&mut buffer) {
+                Ok(_) => (),
+                Err(_) => return true,
+            }
             buffer.trim()
         };
 
-        if input == "q" { break; }
-        match input.parse::<usize>() {
-            Ok(n @ 1...9) => {
-                if let Some((row, col)) = Board::numpad_to_position(n) {
-                    if board[(row, col)].is_none() {
-                        board[(row, col)] = Some(turn);
+        if input.eq_ignore_ascii_case("y") || input.eq_ignore_ascii_case("yes") || input == "" {
+            return true;
+        } else if input.eq_ignore_ascii_case("n") || input.eq_ignore_ascii_case("no") {
+            return false;
+        } else {
+            println!("Please answer y or n");
+        }
+    }
+}
+
+fn game() -> io::Result<()> {
+    let stdin = io::stdin();
+    let mut buffer = String::with_capacity(32);
+    'game: loop {
+        let mut board = Board::new();
+        let mut turn = X;
+
+        loop {
+            println!("{}'s turn (q to quit):\n{}", turn, board);
+            let input = {
+                buffer.clear();
+                try!(stdin.read_line(&mut buffer));
+                buffer.trim()
+            };
+
+            if input == "q" {
+                if prompt_confirm("Are you sure you want to quit? [Y/n]") {
+                    break 'game;
+                } else {
+                    continue;
+                }
+            }
+
+            match input.parse::<usize>() {
+                Ok(n @ 1...9) => {
+                    if let Some((row, col)) = Board::numpad_to_position(n) {
+                        if board[(row, col)].is_none() {
+                            board[(row, col)] = Some(turn);
+                        } else {
+                            println!("That space is already occupied");
+                            continue;
+                        }
                     } else {
-                        println!("That space is already occupied");
+                        println!("Enter a number on the board");
                         continue;
                     }
-                } else {
+                }
+                Ok(_) | Err(_) => {
                     println!("Enter a number on the board");
                     continue;
                 }
             }
-            Ok(_) | Err(_) => {
-                println!("Enter a number on the board");
-                continue;
+
+            if board.game_over() {
+                match board.winner() {
+                    Some(side) => {
+                        println!("{}s win!", side);
+                        break;
+                    }
+                    None => {
+                        println!("It's the cat's game!");
+                        break;
+                    }
+                }
             }
+
+            turn = match turn {
+                X => O,
+                O => X,
+            };
         }
-        turn = match turn { X => O, O => X };
+
+        if !prompt_confirm("Play again? [Y/n]") {
+           break 'game;
+        }
     }
     println!("Goodbye!");
     Ok(())
