@@ -1,6 +1,7 @@
 #![feature(range_contains)]
 
 use std::ops::{Index, IndexMut};
+use std::fmt::{Display, Formatter, Error};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Piece {
@@ -44,7 +45,40 @@ impl IndexMut<(usize, usize)> for Board {
     }
 }
 
+impl Display for Board {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        macro_rules! write_n {
+            ($n:expr) => {
+                try!(match self.squares[$n] {
+                    Some(X) => write!(f, " X "),
+                    Some(O) => write!(f, " O "),
+                    None => write!(f, " {} ", 9 - ($n/3) * 3 - (2 - $n%3)),
+                })
+            }
+        }
+        write_n!(0);
+        try!(write!(f, "|"));
+        write_n!(1);
+        try!(write!(f, "|"));
+        write_n!(2);
+        try!(write!(f, "\n---+---+---\n"));
+        write_n!(3);
+        try!(write!(f, "|"));
+        write_n!(4);
+        try!(write!(f, "|"));
+        write_n!(5);
+        try!(write!(f, "\n---+---+---\n"));
+        write_n!(6);
+        try!(write!(f, "|"));
+        write_n!(7);
+        try!(write!(f, "|"));
+        write_n!(8);
+        Ok(())
+    }
+}
+
 fn main() {
     let mut board = Board::new();
     board[(1, 1)] = Some(X);
+    println!("{}", board);
 }
