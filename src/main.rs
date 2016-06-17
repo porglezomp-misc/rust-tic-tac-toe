@@ -25,7 +25,9 @@ fn menu() -> io::Result<(u32, u32, u32)> {
     loop {
         println!("Choose a mode:
 1) local
-2) online");
+2) host
+3) join"
+        );
 
         let input = {
             try!(io::stdin().read_line(&mut buffer));
@@ -34,9 +36,9 @@ fn menu() -> io::Result<(u32, u32, u32)> {
 
         match &input[..] {
             "1" | "l" | "local" => return game::local(),
-            "2" | "o" | "online" => return game::online(),
+            "2" | "h" | "host" => return game::host(),
+            "3" | "j" | "join" => return game::join(),
             _ => (),
         }
     }
 }
-

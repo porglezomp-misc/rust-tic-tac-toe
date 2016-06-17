@@ -80,7 +80,11 @@ pub fn local() -> io::Result<(u32, u32, u32)> {
     Ok((x, o, cat))
 }
 
-pub fn online() -> io::Result<(u32, u32, u32)> {
+pub fn host() -> io::Result<(u32, u32, u32)> {
+    Ok((0, 0, 0))
+}
+
+pub fn join() -> io::Result<(u32, u32, u32)> {
     Ok((0, 0, 0))
 }
 
