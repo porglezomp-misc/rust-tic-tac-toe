@@ -1,7 +1,9 @@
 use std::io;
 use std::ascii::AsciiExt;
+use std::net::{TcpListener, TcpStream};
+use std::io::Write;
 
-use board::Board;
+use board::{Board, Piece};
 use board::Piece::*;
 use board::InsertError::*;
 
@@ -82,11 +84,26 @@ pub fn local() -> io::Result<(u32, u32, u32)> {
 }
 
 pub fn host() -> io::Result<(u32, u32, u32)> {
-    Ok((0, 0, 0))
+    let server = TcpListener::bind("127.0.0.1:12345").unwrap();
+    println!("Server started at {}, waiting for connections.", server.local_addr().unwrap());
+    let (connection, _) = try!(server.accept());
+    network_game(X, connection)
 }
 
 pub fn join() -> io::Result<(u32, u32, u32)> {
-    Ok((0, 0, 0))
+    print!("Server: ");
+    try!(io::stdout().flush());
+    let mut input = String::with_capacity(32);
+    try!(io::stdin().read_line(&mut input));
+    let connection = try!(TcpStream::connect(input.trim()));
+    network_game(O, connection)
+}
+
+fn network_game(player: Piece, _connection: TcpStream) -> io::Result<(u32, u32, u32)> {
+    match player {
+        X => Ok((1, 0, 0)),
+        O => Ok((0, 1, 0)),
+    }
 }
 
 fn prompt_confirm(msg: &str) -> bool {
