@@ -22,6 +22,12 @@ pub struct Board {
     squares: [Option<Piece>; 9],
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum InsertError {
+    InvalidButton,
+    AlreadyOccupied,
+}
+
 impl Board {
     pub fn new() -> Board {
         Board { squares: [None; 9] }
@@ -43,6 +49,19 @@ impl Board {
             2 => Some((2, 1)),
             3 => Some((2, 2)),
             _ => None,
+        }
+    }
+
+    pub fn numpad_insert(&mut self, key: usize, val: Piece) -> Result<(), InsertError> {
+        if let Some(pos) = Board::numpad_to_position(key) {
+            if self[pos].is_none() {
+                self[pos] = Some(val);
+                Ok(())
+            } else {
+                Err(InsertError::AlreadyOccupied)
+            }
+        } else {
+            Err(InsertError::InvalidButton)
         }
     }
 
@@ -138,6 +157,7 @@ impl Display for Board {
 mod test {
     use super::Board;
     use super::Piece::{X, O};
+    use super::InsertError::*;
 
     #[test]
     fn test_insert() {
@@ -166,5 +186,25 @@ mod test {
                                          None, None, Some(O)]);
         assert!(board.game_over());
         assert_eq!(board.winner(), Some(O));
+    }
+
+    #[test]
+    fn test_numpad_insert() {
+        let mut board = Board::new();
+        let x_board = Board::from_squares([None, None,    None,
+                                           None, Some(X), None,
+                                           None, None,    None]);
+
+        let res = board.numpad_insert(5, X);
+        assert!(res.is_ok());
+        assert_eq!(board, x_board);
+
+        let res = board.numpad_insert(5, O);
+        assert_eq!(res, Err(AlreadyOccupied));
+        assert_eq!(board, x_board);
+
+        let res = board.numpad_insert(0, O);
+        assert_eq!(res, Err(InvalidButton));
+        assert_eq!(board, x_board);
     }
 }

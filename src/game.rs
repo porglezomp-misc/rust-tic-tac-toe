@@ -3,6 +3,7 @@ use std::ascii::AsciiExt;
 
 use board::Board;
 use board::Piece::*;
+use board::InsertError::*;
 
 pub fn local() -> io::Result<(u32, u32, u32)> {
     let stdin = io::stdin();
@@ -29,21 +30,21 @@ pub fn local() -> io::Result<(u32, u32, u32)> {
             }
 
             match input.parse::<usize>() {
-                Ok(n @ 1...9) => {
-                    if let Some((row, col)) = Board::numpad_to_position(n) {
-                        if board[(row, col)].is_none() {
-                            board[(row, col)] = Some(turn);
-                        } else {
+                Ok(n) => {
+                    match board.numpad_insert(n, turn) {
+                        Ok(_) => (),
+                        Err(AlreadyOccupied) => {
                             println!("That space is already occupied");
                             continue;
                         }
-                    } else {
-                        println!("Enter a number on the board");
-                        continue;
+                        Err(InvalidButton) => {
+                            println!("Enter a number on the board");
+                            continue;
+                        }
                     }
                 }
-                Ok(_) | Err(_) => {
-                    println!("Enter a number on the board");
+                Err(_) => {
+                    println!("Enter a number");
                     continue;
                 }
             }
