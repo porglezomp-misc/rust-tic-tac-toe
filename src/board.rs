@@ -27,6 +27,10 @@ impl Board {
         Board { squares: [None; 9] }
     }
 
+    pub fn from_squares(squares: [Option<Piece>; 9]) -> Board {
+        Board { squares: squares }
+    }
+
     pub fn numpad_to_position(key: usize) -> Option<(usize, usize)> {
         match key {
             7 => Some((0, 0)),
@@ -127,5 +131,40 @@ impl Display for Board {
         try!(write!(f, "|"));
         write_n!(8);
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Board;
+    use super::Piece::{X, O};
+
+    #[test]
+    fn test_insert() {
+        let mut board = Board::new();
+        let pos = Board::numpad_to_position(5).unwrap();
+        board[pos] = Some(X);
+        assert_eq!(board, Board::from_squares([None, None,    None,
+                                               None, Some(X), None,
+                                               None, None,    None]));
+    }
+
+    #[test]
+    fn test_win_conditions() {
+        let mut board = Board::new();
+        assert!(! board.is_full());
+        assert!(! board.game_over());
+        assert_eq!(board.winner(), None);
+        board[(0, 0)] = Some(X);
+        board[(0, 1)] = Some(X);
+        board[(0, 2)] = Some(X);
+        assert!(board.game_over());
+        assert_eq!(board.winner(), Some(X));
+
+        let board = Board::from_squares([Some(O), None, None,
+                                         None, Some(O), None,
+                                         None, None, Some(O)]);
+        assert!(board.game_over());
+        assert_eq!(board.winner(), Some(O));
     }
 }
